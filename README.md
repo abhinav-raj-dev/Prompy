@@ -1,6 +1,3 @@
-(Due to technical issues, the search service is temporarily unavailable.)
-
-```markdown
 # Prompy 🚀
 
 **Your Privacy-First AI Prompt Optimizer**  
