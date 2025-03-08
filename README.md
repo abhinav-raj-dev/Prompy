@@ -97,7 +97,7 @@ PRs welcome! Follow our [contribution guidelines](CONTRIBUTING.md).
 
 ---
 
-**Made with ❤️ by [Your Name]**  
+**Made with ❤️ by [Abhinav Raj]**  
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ```
 
