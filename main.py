@@ -45,8 +45,8 @@ Improved prompt:"""
 # Create extraction chain using JSON mode
 extraction_chain = (
     ChatPromptTemplate.from_template(
-        """Extract and return a JSON object with key "information" containing 
-        list of factual information/preferences from: {input}"""
+        """Extract and return PURE JSON (no markdown) with key "information" 
+        containing list of factual information/preferences from: {input}"""
     )
     | llm
     | StrOutputParser()
@@ -62,10 +62,20 @@ refinement_chain = (
     | StrOutputParser()
 )
 
+
+# Update the extraction chain and processing
 def process_prompt(user_input: str) -> ResponseModel:
-    # Extract data using JSON parsing
-    extracted_json = extraction_chain.invoke({"input": user_input})
-    extracted_data = UserData.parse_raw(extracted_json)
+    # Extract data with markdown stripping
+    extracted_response = extraction_chain.invoke({"input": user_input})
+    
+    # Clean JSON response
+    json_str = extracted_response.strip().replace('```json', '').replace('```', '')
+    
+    try:
+        extracted_data = UserData.parse_raw(json_str)
+    except Exception as e:
+        print(f"Failed to parse JSON: {json_str}")
+        raise
     
     # Refine prompt
     refined_prompt = refinement_chain.invoke({"user_input": user_input})
