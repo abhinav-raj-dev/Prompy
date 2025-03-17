@@ -1,3 +1,4 @@
+import sys
 from typing import List
 from pydantic.v1 import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -62,8 +63,6 @@ refinement_chain = (
     | StrOutputParser()
 )
 
-
-# Update the extraction chain and processing
 def process_prompt(user_input: str) -> ResponseModel:
     # Extract data with markdown stripping
     extracted_response = extraction_chain.invoke({"input": user_input})
@@ -103,9 +102,13 @@ def process_prompt(user_input: str) -> ResponseModel:
         enhanced_prompt=refined_prompt
     )
 
-# Example usage
 if __name__ == "__main__":
-    user_query = "I prefer recent AI ethics guidelines. Write about responsible AI development."
-    result = process_prompt(user_query)
+    if len(sys.argv) < 2:
+        print("Error: Please provide a prompt as a command-line argument.")
+        print("Usage: python script.py '<your prompt>'")
+        sys.exit(1)
+    
+    user_input = sys.argv[1]
+    result = process_prompt(user_input)
     print("Stored Data:", result.data_to_store)
-    print("Enhanced Prompt:", result.enhanced_prompt)
+    print("\n Enhanced Prompt:", result.enhanced_prompt)
