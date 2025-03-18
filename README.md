@@ -1,4 +1,3 @@
-```markdown
 # Prompy 🚀
 
 **AI Prompt Optimizer with Browser Integration**  
