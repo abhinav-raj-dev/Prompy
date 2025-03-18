@@ -1,108 +1,167 @@
+```markdown
 # Prompy 🚀
 
-**Your Privacy-First AI Prompt Optimizer**  
-A Chrome extension that enhances AI prompts in real-time using local LLMs. Works across ChatGPT, Claude, Poe, and more.
+**AI Prompt Optimizer with Browser Integration**  
+Chrome extension + Python backend that enhances AI prompts in real-time using Google Gemini.
 
-![Prompy Demo](demo.gif) *Example: Optimizing a ChatGPT prompt*
+![Workflow](workflow.png) *Extension → Python Backend → Google Gemini → Enhanced Prompt*
 
 ## Features ✨
-- 🔒 **100% Local** - No data leaves your device
-- ⚡ **One-Click Optimization** - Rewrite prompts instantly
-- 👔 **Multi-Profile Support** - Work/Personal modes
-- 🧠 **Learning System** - Improves using your past prompts
-- 🛡️ **Privacy Badge** - Visual data safety indicator
-
-## Hardware Requirements
-- Minimum: 4GB GPU (GTX 1650+) + 12GB RAM
-- Recommended: 8GB GPU + 16GB RAM
+- 🖥️ **Real-time Suggestions** - Grammarly-style underline for prompt improvements
+- 🔄 **One-Click Apply** - Accept enhanced prompts directly in chat UIs
+- 🌐 **Cross-Platform** - Works on ChatGPT, Claude, Poe, and more
+- 📚 **Context Memory** - Remembers your preferences via ChromaDB
+- ⚡ **Local Backend** - Python service handles prompt processing
 
 ## Tech Stack 🔧
 | Component               | Technology                  |
 |-------------------------|-----------------------------|
-| Local LLM               | Mistral 7B 4-bit (GGUF)     |
-| Backend                 | Rust + Actix-Web            |
-| Storage                 | IndexedDB + HNSW Index      |
-| ML Embeddings           | TinyBERT (TF.js)            |
-| UI Framework            | Vanilla JS + CSS            |
+| Browser Extension       | Vanilla JavaScript          |
+| Content Scripts         | MutationObserver API        |
+| Backend Service         | Python + LangChain          |
+| Vector Database         | ChromaDB                    |
+| ML Models               | Google Gemini + Embeddings  |
+
+## Architecture Overview
+```mermaid
+graph TD
+    A[User] --> B[Text Input]
+    B --> C[Browser Extension]
+    C --> D{Content Script}
+    D -->|Detects AI Textarea| E[Mutation Observer]
+    E -->|Monitors Input| F[Input Handler]
+    F -->|Raw Prompt| G[Background Script]
+    G -->|HTTP Request| H[Python Backend]
+    H -->|Embed Prompt| I[ChromaDB]
+    H -->|LLM Request| J[Google Gemini]
+    J -->|Enhanced Prompt| H
+    I -->|Context Data| H
+    H -->|JSON Response| G
+    G -->|Process Response| K[UI Controller]
+    K -->|Display Suggestions| L[Suggestion UI]
+    L -->|User Accepts| M[Apply to Textarea]
+    M --> A
+```
 
 ## Installation 📦
 
-### 1. Prerequisites
+### 1. Backend Setup
 ```bash
-# Windows (WSL2)
-wsl --install -d Ubuntu-22.04
-choco install lmstudio
-```
-
-### 2. Backend Setup
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone https://github.com/yourusername/prompy-backend
-cd prompy-backend && cargo build --release
+cd prompy-backend
+pip install -r requirements.txt
+python main.py --serve  # Starts REST API on port 8000
 ```
 
-### 3. LLM Configuration
-1. Download [Mistral-7B-Instruct-v0.2-Q4_K_M.gguf](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF)
-2. Open in LM Studio → Enable GPU offloading (3.5GB)
-
-### 4. Chrome Extension
+### 2. Chrome Extension
 ```bash
 git clone https://github.com/yourusername/prompy-extension
-chrome://extensions → "Load unpacked"
 ```
 
-## Usage 🖱️
-1. Visit any AI chat interface (ChatGPT/Claude)
-2. Start typing - look for the 🛡️ badge
-3. Click to see optimized prompts
-4. Choose profile (Work/Personal)
+1. Open `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked" and select `prompy-extension` folder
 
-**Example Input → Output**  
-`"Help me write a blog intro"` →  
-```markdown
-Act as technical writer for AI audience. 
-Draft 3 intro variants for "Local LLMs in 2024" blog:
-- Variant 1: Start with surprising statistic
-- Variant 2: Pose rhetorical question
-- Variant 3: Share personal anecdote
-Keep under 100 words each. Use markdown.
+### 3. Configure API Endpoint
+Edit `extension/config.json`:
+```json
+{
+  "backend_url": "http://localhost:8000/optimize"
+}
+```
+
+## How It Works 🔍
+
+### Detection Mechanism
+```javascript
+// content-script.js
+const AI_TEXTAREA_SELECTORS = [
+  '#prompt-textarea', // ChatGPT
+  '.ace_content', // Claude
+  '.chat-input', // Poe
+];
+
+function initObserver() {
+  const observer = new MutationObserver(checkForInputs);
+  observer.observe(document.body, { subtree: true, childList: true });
+}
+
+function checkForInputs() {
+  AI_TEXTAREA_SELECTORS.forEach(selector => {
+    const element = document.querySelector(selector);
+    if (element) setupInputHandler(element);
+  });
+}
+```
+
+### Suggestion UI
+```javascript
+function showSuggestion(element, enhancedPrompt) {
+  const suggestionDiv = document.createElement('div');
+  suggestionDiv.className = 'prompy-suggestion';
+  
+  suggestionDiv.innerHTML = `
+    <div class="prompy-underline"></div>
+    <div class="prompy-popup">
+      <p>${enhancedPrompt}</p>
+      <button onclick="applySuggestion('${enhancedPrompt}')">Apply</button>
+    </div>
+  `;
+  
+  element.parentNode.insertBefore(suggestionDiv, element.nextSibling);
+}
+```
+
+## Extension Manifest
+```json
+{
+  "manifest_version": 3,
+  "name": "Prompy",
+  "version": "1.0",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["*://chat.openai.com/*", "*://claude.ai/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["*://chat.openai.com/*", "*://claude.ai/*"],
+    "js": ["content-script.js"],
+    "css": ["styles.css"]
+  }]
+}
 ```
 
 ## Customization 🎨
-Edit `profiles/work.json`:
-```json
-{
-  "tone": "professional",
-  "goals": ["technical writing", "code examples"],
-  "avoid": ["slang", "emoji"],
-  "signature_phrases": ["As the data shows..."]
+Edit `styles.css` for UI changes:
+```css
+.prompy-underline {
+  border-bottom: 2px dashed #4CAF50;
+}
+
+.prompy-popup {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
 }
 ```
 
 ## Troubleshooting 🐞
 | Issue                  | Solution                    |
 |------------------------|-----------------------------|
-| LM Studio not loading  | Use `--nvidia-smi` flag     |
-| Rust build errors      | `rustup update stable`      |
-| Inputs not detected    | Whitelist sites in manifest |
+| Suggestions not appearing | 1. Check backend is running<br>2. Verify CORS settings |
+| UI glitches            | Check z-index in CSS        |
+| Delay in responses     | Increase Gemini timeout     |
+| Missing textareas      | Add selector to config      |
 
-## Roadmap 🗺️
-- [ ] Mobile companion app (iOS/Android)
-- [ ] Team profile sharing
-- [ ] Prompt version history
-- [ ] Auto-suggest templates
-
-## Contributing 🤝
-PRs welcome! Follow our [contribution guidelines](CONTRIBUTING.md).
+## Security 🔒
+- All processing stays local (no cloud calls after initial Gemini API)
+- API keys never leave the backend
+- ChromaDB stores only anonymized prompt embeddings
 
 ---
 
 **Made with ❤️ by Abhinav Raj**  
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ```
-
-Let me know if you need adjustments to any section! For actual use:
-1. Replace `yourusername` in git URLs
-2. Add real demo.gif
-3. Update license file
-4. Include contribution guidelines
